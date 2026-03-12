@@ -22,6 +22,11 @@ This application is a Unicode to Plain Text Convertor designed as a SaaS minimal
 
 ## 5. Aesthetics & Design System
 - **Tone**: Clean, Minimalist, Professional Corporate Tech.
-- **Visuals**: Dark mode / minimal aesthetic with professional color palette (blacks, whites, deep tech blue). No unnecessary UI clutter. Subtle micro-interactions.
+- **Visuals**: Light theme (Slate/White) with Corporate Blue accents. 
+- **Layout Architecture**: 
+  - Centered single-column design (max-width: 4xl) for maximum readability.
+  - Generous padding and prominent, bold typography for headers.
+  - **Conversion Widget Structure**: Vertically stacked. Top container for input text, completely distinct central action bar (containing the style selector, swap button, and copy action), and a bottom container for output text.
+  - Buttons have subtle scale/hover transitions for a tactile feel.
 
 *Note: Monitored via Git iterative commitments.*
