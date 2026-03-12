@@ -155,7 +155,7 @@
                 target_style: direction === 'to_unicode' ? currentStyle : null
             };
 
-            const response = await fetch('http://localhost:8001/convert', {
+            const response = await fetch('http://localhost:8002/convert', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
