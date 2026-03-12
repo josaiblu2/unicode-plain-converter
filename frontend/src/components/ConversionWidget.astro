@@ -1,0 +1,198 @@
+---
+// ConversionWidget.astro
+---
+
+<div class="bg-gray-900 border border-gray-800 rounded-2xl shadow-xl overflow-hidden flex flex-col md:flex-row relative">
+    
+    <!-- Left Area (Input) -->
+    <div class="flex-1 flex flex-col p-6 border-b md:border-b-0 md:border-r border-gray-800">
+        <div class="flex items-center justify-between mb-4">
+            <span class="text-sm font-semibold text-gray-400 uppercase tracking-wider" id="left-label">Plain Text</span>
+            
+            <select id="style-selector" class="bg-gray-800 border-none text-sm rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 outline-none text-white hidden cursor-pointer hover:bg-gray-700 transition">
+                <option value="bold">Bold</option>
+                <option value="italic">Italic</option>
+                <option value="script">Script</option>
+                <option value="fraktur">Fraktur</option>
+                <option value="monospace">Monospace</option>
+                <option value="double_struck">Double-Struck</option>
+            </select>
+        </div>
+        
+        <textarea id="input-text" class="w-full flex-1 min-h-[250px] bg-transparent resize-none outline-none text-lg text-gray-200 placeholder-gray-600 focus:ring-0" placeholder="Type or paste your text here..."></textarea>
+    </div>
+
+    <!-- Center Swap Action (Absolute positioning in center or flex order for mobile) -->
+    <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden md:flex items-center justify-center">
+        <button id="swap-btn" class="w-12 h-12 bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-lg shadow-blue-500/30 flex items-center justify-center transition-transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-gray-900" aria-label="Swap Conversion Direction">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3-4 4 4 4"/><path d="M20 7H4"/><path d="m8 21 4-4-4-4"/><path d="M4 17h16"/></svg>
+        </button>
+    </div>
+
+    <!-- Mobile Swap Button (visible only on small screens) -->
+    <div class="md:hidden flex justify-center -my-6 relative z-10">
+        <button id="swap-btn-mobile" class="w-12 h-12 bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-lg shadow-blue-500/30 flex items-center justify-center transition-transform active:scale-95" aria-label="Swap Conversion Direction">
+             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="rotate-90"><path d="m16 3-4 4 4 4"/><path d="M20 7H4"/><path d="m8 21 4-4-4-4"/><path d="M4 17h16"/></svg>
+        </button>
+    </div>
+
+    <!-- Right Area (Output) -->
+    <div class="flex-1 flex flex-col p-6 bg-gray-900/50">
+        <div class="flex items-center justify-between mb-4">
+            <span class="text-sm font-semibold text-blue-400 uppercase tracking-wider" id="right-label">Unicode Style</span>
+            
+            <button id="copy-btn" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-sm font-medium transition-colors text-gray-300">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                <span id="copy-text">Copy</span>
+            </button>
+        </div>
+        
+        <div class="relative flex-1">
+             <!-- Loader -->
+             <div id="loader" class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm z-10 items-center justify-center hidden">
+                <div class="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+             </div>
+             <textarea id="output-text" class="w-full h-full min-h-[250px] bg-transparent resize-none outline-none text-lg text-white font-medium placeholder-gray-700" readonly placeholder="Result will appear here..."></textarea>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Component State & Logic
+    let direction = 'to_unicode'; // or 'to_plain'
+    let currentStyle = 'bold';
+    let timeoutId = null;
+
+    // DOM Elements
+    const inputEl = document.getElementById('input-text') as HTMLTextAreaElement;
+    const outputEl = document.getElementById('output-text') as HTMLTextAreaElement;
+    const swapBtns = [document.getElementById('swap-btn'), document.getElementById('swap-btn-mobile')];
+    const copyBtn = document.getElementById('copy-btn');
+    const copyText = document.getElementById('copy-text');
+    const styleSelector = document.getElementById('style-selector') as HTMLSelectElement;
+    const leftLabel = document.getElementById('left-label');
+    const rightLabel = document.getElementById('right-label');
+    const loader = document.getElementById('loader');
+
+    // Make selector visible initially
+    styleSelector.classList.remove('hidden');
+
+    const updateLabels = () => {
+        if (direction === 'to_unicode') {
+            leftLabel.textContent = 'Plain Text';
+            leftLabel.className = 'text-sm font-semibold text-gray-400 uppercase tracking-wider';
+            
+            rightLabel.textContent = 'Unicode Style';
+            rightLabel.className = 'text-sm font-semibold text-blue-400 uppercase tracking-wider';
+            
+            styleSelector.classList.remove('hidden');
+        } else {
+            leftLabel.textContent = 'Unicode Style';
+            leftLabel.className = 'text-sm font-semibold text-blue-400 uppercase tracking-wider';
+            
+            rightLabel.textContent = 'Plain Text';
+            rightLabel.className = 'text-sm font-semibold text-gray-400 uppercase tracking-wider';
+            
+            styleSelector.classList.add('hidden');
+        }
+    };
+
+    const handleSwap = () => {
+        direction = direction === 'to_unicode' ? 'to_plain' : 'to_unicode';
+        updateLabels();
+        
+        // Swap contents
+        const temp = inputEl.value;
+        inputEl.value = outputEl.value;
+        
+        // Trigger conversion based on new state
+        if (inputEl.value.trim().length > 0) {
+            convertText(inputEl.value);
+        } else {
+            outputEl.value = '';
+        }
+    };
+
+    const handleCopy = async () => {
+        const text = outputEl.value;
+        if (!text) return;
+        
+        try {
+            await navigator.clipboard.writeText(text);
+            copyText.textContent = 'Copied!';
+            copyBtn.classList.add('bg-green-600/20', 'text-green-400', 'border', 'border-green-600/50');
+            copyBtn.classList.remove('bg-gray-800', 'text-gray-300');
+            
+            setTimeout(() => {
+                copyText.textContent = 'Copy';
+                copyBtn.classList.remove('bg-green-600/20', 'text-green-400', 'border', 'border-green-600/50');
+                copyBtn.classList.add('bg-gray-800', 'text-gray-300');
+            }, 2000);
+        } catch (err) {
+            console.error('Failed to copy', err);
+        }
+    };
+
+    const convertText = async (text: string) => {
+        if (!text.trim()) {
+            outputEl.value = '';
+            return;
+        }
+
+        // Show loading state gracefully
+        loader.classList.remove('hidden');
+        loader.classList.add('flex');
+
+        try {
+            const payload = {
+                text: text,
+                conversion_type: direction,
+                target_style: direction === 'to_unicode' ? currentStyle : null
+            };
+
+            const response = await fetch('http://localhost:8001/convert', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                throw new Error(`API Error: ${response.status}`);
+            }
+
+            const data = await response.json();
+            outputEl.value = data.converted_text;
+        } catch (error) {
+            console.error("Conversion failed:", error);
+            outputEl.value = "Error connecting to the conversion server.";
+        } finally {
+            loader.classList.add('hidden');
+            loader.classList.remove('flex');
+        }
+    };
+
+    // Event Listeners
+    swapBtns.forEach(btn => btn?.addEventListener('click', handleSwap));
+    copyBtn.addEventListener('click', handleCopy);
+    
+    styleSelector.addEventListener('change', (e) => {
+        const target = e.target as HTMLSelectElement;
+        currentStyle = target.value;
+        if (inputEl.value) {
+            convertText(inputEl.value);
+        }
+    });
+
+    // Debounce the input to avoid hammering the API
+    inputEl.addEventListener('input', (e) => {
+        const target = e.target as HTMLTextAreaElement;
+        if (timeoutId) clearTimeout(timeoutId);
+        
+        timeoutId = setTimeout(() => {
+            convertText(target.value);
+        }, 300);
+    });
+
+</script>

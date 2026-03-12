@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from enum import Enum
 from typing import Optional
@@ -11,6 +12,15 @@ app = FastAPI(
     title="Unicode to Plain Text API",
     description="A minimalist SaaS API to convert between specialized Unicode styles (bold, italic, fraktur, script, etc.) and standard plain text representation.",
     version="1.0.0",
+)
+
+# Add CORS Middleware to allow requests from the Astro frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:4321", "http://127.0.0.1:4321"], # Astro default ports
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 class ConversionType(str, Enum):
