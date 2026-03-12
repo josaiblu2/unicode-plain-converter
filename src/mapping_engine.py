@@ -12,6 +12,8 @@ These map specifically to Mathematical Alphanumeric Symbols and other
 Unicode styled character variants commonly used in Social Media.
 """
 
+import unicodedata
+
 # Plain characters
 PLAIN_UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 PLAIN_LOWER = "abcdefghijklmnopqrstuvwxyz"
@@ -55,23 +57,48 @@ STYLES = {
 _to_plain = {}
 _to_style = {style: {} for style in STYLES}
 
+# Utility to convert a 32-bit string (which might be surrogate pairs on some builds) into a list of actual characters
+def _split_unicode(s):
+    return [c for c in s]
+
 for style, mappings in STYLES.items():
     if "upper" in mappings and mappings["upper"]:
-        for p, u in zip(PLAIN_UPPER, mappings["upper"]):
+        u_list = _split_unicode(mappings["upper"])
+        for p, u in zip(PLAIN_UPPER, u_list):
             _to_plain[u] = p
             _to_style[style][p] = u
+            
     if "lower" in mappings and mappings["lower"]:
-        for p, u in zip(PLAIN_LOWER, mappings["lower"]):
+        u_list = _split_unicode(mappings["lower"])
+        for p, u in zip(PLAIN_LOWER, u_list):
             _to_plain[u] = p
             _to_style[style][p] = u
+            
     if "digits" in mappings and mappings["digits"]:
-        for p, u in zip(PLAIN_DIGITS, mappings["digits"]):
+        u_list = _split_unicode(mappings["digits"])
+        for p, u in zip(PLAIN_DIGITS, u_list):
             _to_plain[u] = p
             _to_style[style][p] = u
 
 def convert_to_plain(text: str) -> str:
-    """Converts any supported styled unicode text to plain text."""
-    return "".join(_to_plain.get(char, char) for char in text)
+    """
+    Converts any supported styled unicode text to plain text.
+    Uses Dictionary Mapping first, then falls back to NFKD Normalization for full coverage.
+    """
+    result = []
+    for char in text:
+        # Check dictionary first
+        if char in _to_plain:
+            result.append(_to_plain[char])
+        else:
+            # Fallback to unicodedata normalization
+            # NFKD decomposes unicode, retaining the base plain characters
+            normalized = unicodedata.normalize('NFKD', char)
+            # Remove combining characters (accents, marks etc if desired, though usually alphanumeric doesn't have them)
+            # We just take the normalized base string safely
+            result.append(normalized)
+    
+    return "".join(result)
 
 def convert_to_style(text: str, style: str) -> str:
     """
@@ -83,6 +110,10 @@ def convert_to_style(text: str, style: str) -> str:
     
     mapping = _to_style[style]
     return "".join(mapping.get(char, char) for char in text)
+
+def get_hex_string(text: str) -> str:
+    """Utility to get the hex representation of a string for debugging."""
+    return " ".join(f"U+{ord(c):04X}" for c in text)
 
 def get_available_styles() -> list:
     """Returns a list of supported styles."""

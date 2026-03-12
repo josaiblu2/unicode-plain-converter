@@ -51,6 +51,9 @@ async def convert_text(request: ConversionRequest):
     
     if request.conversion_type == ConversionType.to_plain:
         result = mapping_engine.convert_to_plain(request.text)
+        print(f"--- to_plain conversion ---")
+        print(f"Input Hex:  {mapping_engine.get_hex_string(request.text)}")
+        print(f"Output Hex: {mapping_engine.get_hex_string(result)}")
         return ConversionResponse(
             original_text=request.text,
             converted_text=result,
@@ -64,6 +67,9 @@ async def convert_text(request: ConversionRequest):
         
         try:
             result = mapping_engine.convert_to_style(request.text, request.target_style)
+            print(f"--- to_unicode ({request.target_style}) conversion ---")
+            print(f"Input Hex:  {mapping_engine.get_hex_string(request.text)}")
+            print(f"Output Hex: {mapping_engine.get_hex_string(result)}")
             return ConversionResponse(
                 original_text=request.text,
                 converted_text=result,
