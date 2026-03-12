@@ -29,4 +29,8 @@ This application is a Unicode to Plain Text Convertor designed as a SaaS minimal
   - **Conversion Widget Structure**: Vertically stacked. Top container for input text, completely distinct central action bar (containing the style selector, swap button, and copy action), and a bottom container for output text.
   - Buttons have subtle scale/hover transitions for a tactile feel.
 
+## 6. Validation & Quality Assurance
+- **Testing Standard**: Regressions are prevented via strict adherence to the **Golden Test Cases**.
+- **Reference Document**: Detailed test scenarios and Hex Code Point verification methods are tracked separately in [`tests/test_cases.md`](./tests/test_cases.md).
+
 *Note: Monitored via Git iterative commitments.*
